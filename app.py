@@ -1,7 +1,8 @@
 import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-from config import TELEGRAM_TOKEN
+import os
+TELEGRAM_TOKEN = os.environ.get("8581773614:AAEQu20iY-MjQ9HhS6xBamhZgx3r4nnpl2E")
 from database import Database
 
 # Создаём объект БД
