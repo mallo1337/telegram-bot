@@ -1,6 +1,6 @@
 import asyncpg
 import os
-DATABASE_URL = os.environ.get("postgres://avnadmin:AVNS_xePgM_KGoKWdYCRItQr@pg-38383ef6-kf677.e.aivencloud.com:23673/defaultdb?sslmode=require")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 class Database:
     def __init__(self):
