@@ -125,3 +125,25 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# ===== ЭТО ДЛЯ RENDER, НЕ МЕНЯЕТ ЛОГИКУ БОТА =====
+import threading
+from flask import Flask
+
+flask_app = Flask(__name__)
+
+@flask_app.route('/')
+def home():
+    return "Бот работает"
+
+def start_bot():
+    asyncio.run(main())
+
+if __name__ == "__main__":
+    # Запускаем бота в фоновом потоке (он работает как обычно)
+    thread = threading.Thread(target=start_bot)
+    thread.start()
+    
+    # Запускаем веб-сервер для Render
+    port = int(os.environ.get('PORT', 5000))
+    flask_app.run(host='0.0.0.0', port=port)
