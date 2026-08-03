@@ -124,9 +124,6 @@ async def main():
     print("🤖 Бот запущен!")
     await app.run_polling()
 
-if __name__ == "__main__":
-    asyncio.run(main())
-
 # ===== ЭТО ДЛЯ RENDER, НЕ МЕНЯЕТ ЛОГИКУ БОТА =====
 import threading
 from flask import Flask
