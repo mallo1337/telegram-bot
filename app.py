@@ -1,14 +1,20 @@
 import asyncio
+import os
+import threading
+from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-import os
-TELEGRAM_TOKEN = "8581773614:AAEQu20iY-MjQ9HhS6xBamhZgx3r4nnpl2E"
 from database import Database
 
-# Создаём объект БД
+# --- Переменные окружения ---
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+if not TELEGRAM_TOKEN:
+    raise ValueError("❌ TELEGRAM_TOKEN не найден!")
+
+# --- База данных ---
 db = Database()
 
-# ---------- ОБРАБОТЧИКИ ----------
+# ---------- ОБРАБОТЧИКИ БОТА ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await db.register_player(
@@ -37,7 +43,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     if query.data == "search_2x2":
-        # Проверяем мут
         if await db.is_muted(user_id):
             await query.edit_message_text(
                 "❌ Ты в муте! Подожди 5 минут.",
@@ -47,25 +52,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         
-        # Добавляем в лобби
         lobby_id = await db.add_to_lobby_2x2(user_id)
         
-        # Проверяем, заполнилось ли
         if await db.is_lobby_full_2x2(lobby_id):
-            await query.edit_message_text(
-                "✅ Лобби заполнено! Ожидай начала матча..."
-            )
+            await query.edit_message_text("✅ Лобби заполнено! Ожидай начала матча...")
         else:
             await query.edit_message_text(
-                "🔍 Ищешь соперника для 2x2...\n"
-                "Ожидай, когда лобби заполнится.",
+                "🔍 Ищешь соперника для 2x2...\nОжидай, когда лобби заполнится.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🚫 Отменить поиск", callback_data=f"cancel_{lobby_id}")]
                 ])
             )
     
     elif query.data == "search_5x5":
-        # ВРЕМЕННО: заглушка для 5х5
         await query.edit_message_text(
             "🚧 Режим 5х5 в разработке!",
             reply_markup=InlineKeyboardMarkup([
@@ -108,40 +107,31 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-# ---------- ЗАПУСК ----------
-async def main():
-    # Подключаемся к БД
+# ---------- ФУНКЦИЯ ЗАПУСКА БОТА ----------
+async def run_bot():
     await db.connect()
-    
-    # Создаём приложение
     app = Application.builder().token(TELEGRAM_TOKEN).build()
-    
-    # Регистрируем обработчики
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
-    
-    # Запускаем бота
-    print("🤖 Бот запущен!")
+    print("🤖 Бот запущен и готов к работе!")
     await app.run_polling()
 
-# ===== ЭТО ДЛЯ RENDER, НЕ МЕНЯЕТ ЛОГИКУ БОТА =====
-import threading
-from flask import Flask
-
+# ---------- ВЕБ-СЕРВЕР ДЛЯ RENDER ----------
 flask_app = Flask(__name__)
 
 @flask_app.route('/')
 def home():
-    return "Бот работает"
+    return "Бот работает!"
 
 def start_bot():
-    asyncio.run(main())
+    asyncio.run(run_bot())
 
+# ---------- ГЛАВНЫЙ ЗАПУСК ----------
 if __name__ == "__main__":
-    # Запускаем бота в фоновом потоке (он работает как обычно)
-    thread = threading.Thread(target=start_bot)
-    thread.start()
+    # Запускаем бота в фоновом потоке
+    bot_thread = threading.Thread(target=start_bot)
+    bot_thread.start()
     
-    # Запускаем веб-сервер для Render
+    # Запускаем веб-сервер
     port = int(os.environ.get('PORT', 5000))
     flask_app.run(host='0.0.0.0', port=port)
